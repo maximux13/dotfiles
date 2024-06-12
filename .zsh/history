@@ -1,0 +1,7 @@
+HISTFILE=$HOME/.zsh_history
+SAVEHIST=1000
+HISTSIZE=999
+setopt sharehistory
+setopt hist_expire_dups_first
+setopt hist_ignore_dups
+setopt hist_verify

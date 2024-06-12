@@ -1,0 +1,5 @@
+autoload -U +X bashcompinit && bashcompinit
+
+if command -v ngrok &>/dev/null; then
+  eval "$(ngrok completion)"
+fi
