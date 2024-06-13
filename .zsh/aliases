@@ -1,2 +1,2 @@
 alias code="code-insiders"
-alias ls="eza --icons=always"
+alias ls="ls --color"

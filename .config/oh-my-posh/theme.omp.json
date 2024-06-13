@@ -3,9 +3,9 @@
   "console_title_template": "{{.Folder}}{{if .Root}} :: root{{end}} :: {{.Shell}}",
   "palette": {
     "os": "darkGray",
-    "closer": "p:os",
-    "pink": "#686D76",
-    "lavender": "#686D76",
+    "closer": "darkGray",
+    "pink": "lightRed",
+    "lavender": "magenta",
     "blue": "blue"
   },
   "blocks": [
@@ -43,7 +43,7 @@
       "segments": [
         {
           "style": "plain",
-          "foreground": "p:os",
+          "foreground": "white",
           "leading_diamond": "\ue0b2",
           "properties": {
             "branch_icon": "\ue725 ",
@@ -72,11 +72,6 @@
       "type": "prompt"
     }
   ],
-  "transient_prompt": {
-    "background": "transparent",
-    "foreground": "p:closer",
-    "template": "{{ .Shell }} \uf105 "
-  },
   "final_space": true,
   "version": 2
 }
