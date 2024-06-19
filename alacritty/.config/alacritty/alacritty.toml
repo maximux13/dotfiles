@@ -11,13 +11,14 @@ startup_mode = "Maximized"
 padding = { x = 24, y = 32 }
 
 [font]
-normal = { family = "Hasklug Nerd Font Mono", style = "Regular" }
 size = 18
+offset = { x = 0, y = 12 }
+normal = { family = "Hasklug Nerd Font Mono", style = "Regular" }
 bold = { family = "Hasklug Nerd Font Mono", style = "Medium" }
-
 
 [selection]
 save_to_clipboard = true
+semantic_escape_chars = ",│`|:\"' ()[]{<>\t"
 
 [cursor]
 style = { shape = "Block", blinking = "On" }
