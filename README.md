@@ -20,7 +20,7 @@ To clone the repository and set up the dotfiles, follow these steps:
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/yourusername/dotfiles.git
+git clone https://github.com/maximux13/dotfiles.git
 cd dotfiles
 ```
 
