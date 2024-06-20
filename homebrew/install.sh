@@ -1,4 +1,18 @@
 # -------------------------
+# Check if Homebrew is installed, if not, install it.
+# -------------------------
+if ! command -v brew &> /dev/null
+then
+    echo "Homebrew not installed. Installing Homebrew..."
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+fi
+
+echo "Homebrew installed. Updating Homebrew..."
+brew update
+
+echo "Installing Homebrew packages..."
+
+# -------------------------
 # Leaves
 # -------------------------
 
@@ -74,3 +88,5 @@ figma
 brew install --cask sonos
 brew install --cask appcleaner
 brew install --cask surfshark
+
+echo "Homebrew packages installed."
