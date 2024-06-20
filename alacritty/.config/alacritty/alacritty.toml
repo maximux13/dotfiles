@@ -12,7 +12,7 @@ padding = { x = 24, y = 32 }
 
 [font]
 size = 18
-offset = { x = 0, y = 12 }
+offset = { x = 0, y = 0 }
 normal = { family = "Hasklug Nerd Font Mono", style = "Regular" }
 bold = { family = "Hasklug Nerd Font Mono", style = "Medium" }
 
