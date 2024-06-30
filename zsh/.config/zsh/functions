@@ -1,0 +1,38 @@
+to_webm() {
+  if [[ "$1" == "--help" ]]; then
+    echo "Usage: to_webm input_file [speed] [crf]"
+    echo "Convert a .mov file to .webm format with optional speed and CRF parameters."
+    echo ""
+    echo "  input_file   The .mov file to convert."
+    echo "  speed        The playback speed (default: 1)."
+    echo "  crf          The Constant Rate Factor for quality (0-63, default: 50)."
+    echo ""
+    echo "Examples:"
+    echo "  to_webm video.mov           # Default speed and quality"
+    echo "  to_webm video.mov 2         # Double speed, default quality"
+    echo "  to_webm video.mov 1 20      # Default speed, higher quality"
+    return 0
+  fi
+
+  local input_file="$1"
+  local speed="${2:-1}"
+  local crf="${3:-50}"
+
+  ffmpeg -i "$input_file" -filter:v "setpts=${speed}*PTS" -c:v libvpx-vp9 -b:v 0 -crf "$crf" -c:a libopus "${input_file%.mov}.webm"
+}
+
+
+use_specific_pnpm() {
+  if [ -f "package.json" ]; then
+    pnpm_version=$(jq -r '.packageManager' package.json | grep -o 'pnpm@[0-9.]*')
+
+    if [ -n "$pnpm_version" ]; then
+      echo "󱗼 Changed pnpm version to: $pnpm_version"
+      pnpx $pnpm_version "$@"
+      return
+    fi
+  fi
+
+  echo "󱗼 Using default pnpm version"
+  command pnpm "$@"
+}

@@ -9,6 +9,7 @@ source $ZSH_FOLDER/zinit
 
 source $ZSH_FOLDER/keybindings
 source $ZSH_FOLDER/history
+source $ZSH_FOLDER/functions
 source $ZSH_FOLDER/aliases
 source $ZSH_FOLDER/completions
 
