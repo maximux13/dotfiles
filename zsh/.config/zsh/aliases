@@ -1,3 +1,3 @@
 alias pnpm="use_specific_pnpm"
 alias code="code-insiders"
-alias ls="ls --color"
+alias ls="lsd --tree --depth 1"

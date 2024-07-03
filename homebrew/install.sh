@@ -34,6 +34,7 @@ brew install zoxide
 brew install stow
 brew install coreutils
 brew install jandedobbeleer/oh-my-posh/oh-my-posh
+brew install lsd
 
 # Cloud and Deployment
 brew install awscli
