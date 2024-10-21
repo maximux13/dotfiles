@@ -1,0 +1,21 @@
+#!/bin/bash
+
+# Default value for the number of branches to show
+BRANCHES_TO_SHOW=5
+
+# Parse command-line arguments
+while [[ "$#" -gt 0 ]]; do
+    case $1 in
+        --limit)
+            BRANCHES_TO_SHOW="$2"
+            shift 2
+            ;;
+        *)
+            echo "Unknown parameter: $1"
+            exit 1
+            ;;
+    esac
+done
+
+# Run the git command with the desired number of branches
+git for-each-ref --sort=-committerdate --format='%(refname:short) %(committerdate:relative)' refs/heads/ | head -n "$BRANCHES_TO_SHOW"
