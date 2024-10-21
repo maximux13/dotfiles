@@ -70,6 +70,22 @@
         }
       ],
       "type": "prompt"
+    },
+    {
+      "type": "rprompt",
+      "alignment": "right",
+      "segments": [
+        {
+          "type": "executiontime",
+          "foreground": "p:closer",
+          "template": " {{ .FormattedMs }} ",
+          "properties": {
+            "threshold": 500,
+            "style": "amarillo",
+            "always_enabled": false
+          }
+        }
+      ]
     }
   ],
   "final_space": true,
