@@ -54,7 +54,7 @@ brew install act
 
 # Daily
 brew install --cask 1password
-brew install --cask alacritty
+brew install --cask kitty
 brew install --cask slack-cli
 brew install --cask rectangle
 brew install --cask raycast
@@ -69,7 +69,6 @@ brew install --cask brave-browser
 brew install --cask orbstack
 brew install --cask android-studio
 brew install --cask ngrok
-brew install --cask pgadmin4
 brew install --cask zulu17
 
 # Messaging
@@ -83,7 +82,7 @@ brew install --cask font-lilex-nerd-font
 brew install --cask font-monaspace
 
 # Design
-figma
+brew install --cask figma
 
 # Misc
 brew install --cask sonos
