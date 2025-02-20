@@ -23,7 +23,4 @@ source $ZSH_FOLDER/zstyle
 
 source $ZSH_FOLDER/fzf
 source $ZSH_FOLDER/zoxide
-
-if command -v fastfetch &> /dev/null; then
-  fastfetch
-fi
+source $ZSH_FOLDER/fastfetch
