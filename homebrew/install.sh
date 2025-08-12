@@ -35,6 +35,7 @@ brew install stow
 brew install coreutils
 brew install jandedobbeleer/oh-my-posh/oh-my-posh
 brew install lsd
+brew install gitui
 
 # Cloud and Deployment
 brew install awscli
@@ -54,7 +55,7 @@ brew install act
 
 # Daily
 brew install --cask 1password
-brew install --cask kitty
+brew install --cask ghostty
 brew install --cask slack-cli
 brew install --cask rectangle
 brew install --cask raycast
@@ -69,23 +70,21 @@ brew install --cask brave-browser
 brew install --cask orbstack
 brew install --cask android-studio
 brew install --cask ngrok
-brew install --cask zulu17
 
 # Messaging
 brew install --cask signal
-brew install --cask discord
 brew install --cask zoom
 
 # Fonts
 brew install --cask font-hasklug-nerd-font
 brew install --cask font-lilex-nerd-font
 brew install --cask font-monaspace
+brew install --cask font-google-sans-code
 
 # Design
 brew install --cask figma
 
 # Misc
-brew install --cask sonos
 brew install --cask appcleaner
 brew install --cask surfshark
 
