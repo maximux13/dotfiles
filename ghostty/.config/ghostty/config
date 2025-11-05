@@ -1,4 +1,4 @@
-font-family = "Monaspace Argon Var"
+font-family = "Google Sans Mono"
 font-feature = ss01
 font-feature = ss02
 font-feature = ss03
@@ -11,8 +11,16 @@ font-feature = ss09
 font-size = 16
 
 # Theme
-theme = "catppuccin-mocha"
-adjust-cell-height = 32%
+theme = light:Adwaita, dark:Adwaita Dark
+adjust-cell-height =  8%
+cursor-color = #000000
+cursor-style = block
+background-blur = true
+background-opacity = 0.9
+
 
 # Keybind
 copy-on-select = clipboard
+
+link-url = true
+fullscreen = true
