@@ -24,8 +24,6 @@ brew install git-standup
 # Node and Package Managers
 brew install nvm
 brew install pnpm
-brew install yarn
-brew install pkgxdev/made/pkgx
 
 # Shell and Utilities
 brew install zsh
@@ -68,8 +66,11 @@ brew install --cask brave-browser
 
 # Development
 brew install --cask orbstack
-brew install --cask android-studio
 brew install --cask ngrok
+brew install --cask visual-studio-code@insiders
+brew install --cask zed
+brew install --cask codex
+brew install --cask claude-code
 
 # Messaging
 brew install --cask signal
