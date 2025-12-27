@@ -5,6 +5,7 @@ export HOMEBREW_NO_ANALYTICS=1
 
 export PATH=$PATH:$ZSH_FOLDER/scripts
 export PATH=$HOME/bin:/usr/local/bin:$PATH
+export PATH=$HOME/.local/bin:$PATH
 export PATH="/opt/homebrew/opt/libpq/bin:$PATH"
 
 source $ZSH_FOLDER/nvm
