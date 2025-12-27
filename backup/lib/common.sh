@@ -70,6 +70,7 @@ EMOJI_SHIELD="🛡️ "
 EMOJI_BACKUP="💾"
 EMOJI_RESTORE="♻️ "
 EMOJI_MAC="🍎"
+EMOJI_WORKSPACE="🗂️ "
 
 # =============================================================================
 # Intro Headers - Clean modern design
@@ -167,18 +168,66 @@ tag_skip() { printf "   ${BG_GRAY}${FG_BLACK} skip ${RESET} ${DIM}%s${RESET}\n" 
 SPINNER_PID=""
 SPINNER_FRAMES=("⠋" "⠙" "⠹" "⠸" "⠼" "⠴" "⠦" "⠧" "⠇" "⠏")
 
+# Cleanup function for interrupts
+_cleanup_spinner() {
+    if [[ -n "$SPINNER_PID" ]]; then
+        kill "$SPINNER_PID" 2>/dev/null
+        wait "$SPINNER_PID" 2>/dev/null
+        SPINNER_PID=""
+    fi
+    # Clear line and restore cursor
+    printf "\r\033[K"
+    tput cnorm 2>/dev/null || true
+    echo ""
+}
+
+# Set trap for cleanup on interrupt
+trap '_cleanup_spinner; exit 130' INT TERM
+
 # Start a spinner with a message
 # Usage: start_spinner "Loading..."
+# Usage: start_spinner "Loading..." true              # with elapsed time
+# Usage: start_spinner "Loading..." true "/path/file" # with time + file size
 start_spinner() {
     local message="${1:-Loading...}"
+    local show_time="${2:-false}"
+    local watch_file="${3:-}"
 
     # Don't start if not in a terminal
     [[ ! -t 1 ]] && return
 
+    # Hide cursor
+    tput civis 2>/dev/null || true
+
     (
         local i=0
+        local start_time=$SECONDS
+        local last_size_check=0
+        local file_size=""
+
         while true; do
-            printf "\r${CYAN}${SPINNER_FRAMES[$i]}${RESET} ${DIM}%s${RESET}" "$message"
+            local elapsed=$((SECONDS - start_time))
+            local mins=$((elapsed / 60))
+            local secs=$((elapsed % 60))
+
+            # Update file size every 2 seconds if watching a file
+            if [[ -n "$watch_file" && $((elapsed - last_size_check)) -ge 2 ]]; then
+                if [[ -f "$watch_file" ]]; then
+                    file_size=$(du -h "$watch_file" 2>/dev/null | cut -f1)
+                fi
+                last_size_check=$elapsed
+            fi
+
+            if [[ "$show_time" == "true" ]]; then
+                if [[ -n "$file_size" ]]; then
+                    printf "\r   ${CYAN}${SPINNER_FRAMES[$i]}${RESET} ${DIM}%s${RESET} ${DIM}[%d:%02d]${RESET} ${BOLD}%s${RESET}" "$message" "$mins" "$secs" "$file_size"
+                else
+                    printf "\r   ${CYAN}${SPINNER_FRAMES[$i]}${RESET} ${DIM}%s${RESET} ${DIM}[%d:%02d]${RESET}" "$message" "$mins" "$secs"
+                fi
+            else
+                printf "\r   ${CYAN}${SPINNER_FRAMES[$i]}${RESET} ${DIM}%s${RESET}" "$message"
+            fi
+
             i=$(( (i + 1) % ${#SPINNER_FRAMES[@]} ))
             sleep 0.08
         done
@@ -198,8 +247,9 @@ stop_spinner() {
         SPINNER_PID=""
     fi
 
-    # Clear the line
+    # Clear the line and restore cursor
     printf "\r\033[K"
+    tput cnorm 2>/dev/null || true
 }
 
 # Run a command with a spinner

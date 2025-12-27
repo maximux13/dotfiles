@@ -19,6 +19,10 @@ source "$LIB_DIR/dotfiles.sh"
 source "$LIB_DIR/apps.sh"
 source "$LIB_DIR/vscode.sh"
 source "$LIB_DIR/npm.sh"
+source "$LIB_DIR/workspace.sh"
+
+# Flags
+INCLUDE_WORKSPACE=false
 
 # Usage
 usage() {
@@ -26,11 +30,14 @@ usage() {
     printf "${BOLD}${CYAN}Mac Backup${RESET} - ${DIM}Secure backup for your Mac${RESET}\n"
     echo ""
     printf "${BOLD}Usage:${RESET}\n"
-    printf "  %s ${CYAN}<destination>${RESET}\n" "$0"
+    printf "  %s ${CYAN}<destination>${RESET} [options]\n" "$0"
+    echo ""
+    printf "${BOLD}Options:${RESET}\n"
+    printf "  ${CYAN}--workspace${RESET}  Include ~/workspace projects ${DIM}(excludes node_modules, etc.)${RESET}\n"
     echo ""
     printf "${BOLD}Examples:${RESET}\n"
     printf "  %s /Volumes/USB/\n" "$0"
-    printf "  %s ~/Desktop/\n" "$0"
+    printf "  %s ~/Desktop/ --workspace\n" "$0"
     echo ""
     printf "${BOLD}What gets backed up:${RESET}\n"
     printf "  ${EMOJI_LOCK}  Secrets (SSH, AWS, GPG) ${DIM}[encrypted]${RESET}\n"
@@ -38,6 +45,7 @@ usage() {
     printf "  ${EMOJI_BREW}  Homebrew packages\n"
     printf "  ${EMOJI_CODE}  VS Code Insiders\n"
     printf "  ${EMOJI_NPM}  NPM global packages\n"
+    printf "  ${EMOJI_WORKSPACE} Workspace ${DIM}[optional: --workspace]${RESET}\n"
     echo ""
     exit 1
 }
@@ -49,6 +57,21 @@ main() {
     fi
 
     local dest="$1"
+    shift
+
+    # Parse optional arguments
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --workspace)
+                INCLUDE_WORKSPACE=true
+                shift
+                ;;
+            *)
+                log_error "Unknown option: $1"
+                usage
+                ;;
+        esac
+    done
 
     # Validate destination
     if [[ ! -d "$dest" ]]; then
@@ -125,6 +148,19 @@ main() {
     fi
 
     # ─────────────────────────────────────────
+    # Workspace (optional)
+    # ─────────────────────────────────────────
+    if $INCLUDE_WORKSPACE; then
+        echo ""
+        print_tag "workspace" "pink" "${EMOJI_WORKSPACE}Backing up workspace..."
+        if backup_workspace "$backup_dir"; then
+            tag_done "Workspace archived (excluding node_modules, etc.)"
+        else
+            tag_warn "Workspace backup failed"
+        fi
+    fi
+
+    # ─────────────────────────────────────────
     # Manifest
     # ─────────────────────────────────────────
     echo ""
@@ -148,6 +184,7 @@ main() {
     [[ -f "$backup_dir/Brewfile" ]] && printf "   ${DIM}├─${RESET} 🍺 Brewfile\n"
     [[ -d "$backup_dir/vscode-insiders" ]] && printf "   ${DIM}├─${RESET} 💻 vscode-insiders/\n"
     [[ -f "$backup_dir/npm-global.txt" ]] && printf "   ${DIM}├─${RESET} 📦 npm-global.txt\n"
+    [[ -f "$backup_dir/workspace.tar.gz" ]] && printf "   ${DIM}├─${RESET} 🗂️  workspace.tar.gz\n"
     [[ -f "$backup_dir/manifest.json" ]] && printf "   ${DIM}╰─${RESET} ⚙️  manifest.json\n"
 
     echo ""
@@ -171,7 +208,8 @@ create_manifest() {
         "dotfiles": $([ -f "$backup_dir/dotfiles.tar.gz" ] && echo "true" || echo "false"),
         "brewfile": $([ -f "$backup_dir/Brewfile" ] && echo "true" || echo "false"),
         "vscode": $([ -d "$backup_dir/vscode-insiders" ] && echo "true" || echo "false"),
-        "npm": $([ -f "$backup_dir/npm-global.txt" ] && echo "true" || echo "false")
+        "npm": $([ -f "$backup_dir/npm-global.txt" ] && echo "true" || echo "false"),
+        "workspace": $([ -f "$backup_dir/workspace.tar.gz" ] && echo "true" || echo "false")
     }
 }
 EOF

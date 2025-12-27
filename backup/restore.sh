@@ -19,6 +19,7 @@ source "$LIB_DIR/dotfiles.sh"
 source "$LIB_DIR/apps.sh"
 source "$LIB_DIR/vscode.sh"
 source "$LIB_DIR/npm.sh"
+source "$LIB_DIR/workspace.sh"
 
 # Default restore target
 RESTORE_TARGET="$HOME"
@@ -52,12 +53,14 @@ show_menu() {
     local has_brewfile=false
     local has_vscode=false
     local has_npm=false
+    local has_workspace=false
 
     [[ -f "$backup_dir/secrets.tar.enc" ]] && has_secrets=true
     [[ -f "$backup_dir/dotfiles.tar.gz" ]] && has_dotfiles=true
     [[ -f "$backup_dir/Brewfile" ]] && has_brewfile=true
     [[ -d "$backup_dir/vscode-insiders" ]] && has_vscode=true
     [[ -f "$backup_dir/npm-global.txt" ]] && has_npm=true
+    [[ -f "$backup_dir/workspace.tar.gz" ]] && has_workspace=true
 
     printf "   ${BG_CYAN}${FG_BLACK} select ${RESET} ${BOLD}What would you like to restore?${RESET}\n"
     echo ""
@@ -103,11 +106,18 @@ show_menu() {
         printf "   ${DIM}○${RESET} ${DIM}[5]${RESET} ${EMOJI_NPM}  ${DIM}NPM Packages (not in backup)${RESET}\n"
     fi
 
+    # Workspace
+    if $has_workspace; then
+        printf "   ${GREEN}●${RESET} ${BOLD}[6]${RESET} ${EMOJI_WORKSPACE} Workspace (projects)\n"
+    else
+        printf "   ${DIM}○${RESET} ${DIM}[6]${RESET} ${EMOJI_WORKSPACE} ${DIM}Workspace (not in backup)${RESET}\n"
+    fi
+
     echo ""
     printf "   ${DIM}───────────────────────────────────────────────${RESET}\n"
     echo ""
     if $TEST_MODE; then
-        printf "   ${PURPLE}[a]${RESET} All testable ${DIM}(2,3)${RESET}     ${RED}[q]${RESET} Quit\n"
+        printf "   ${PURPLE}[a]${RESET} All testable ${DIM}(2,3,6)${RESET}   ${RED}[q]${RESET} Quit\n"
     else
         printf "   ${PURPLE}[a]${RESET} All available          ${RED}[q]${RESET} Quit\n"
     fi
@@ -220,9 +230,9 @@ main() {
     # Handle "all"
     if [[ "$selection" == "a" ]]; then
         if $TEST_MODE; then
-            selection="2,3"
+            selection="2,3,6"
         else
-            selection="1,2,3,4,5"
+            selection="1,2,3,4,5,6"
         fi
     fi
 
@@ -298,6 +308,18 @@ main() {
                     fi
                 else
                     tag_warn "NPM packages not found"
+                fi
+                ;;
+            6)
+                if [[ -f "$backup_dir/workspace.tar.gz" ]]; then
+                    print_tag "workspace" "pink" "${EMOJI_WORKSPACE}Restoring workspace..."
+                    if restore_workspace "$backup_dir" "$RESTORE_TARGET"; then
+                        tag_done "Workspace restored"
+                    else
+                        tag_error "Workspace restore failed"
+                    fi
+                else
+                    tag_warn "Workspace not found in backup"
                 fi
                 ;;
             *)
