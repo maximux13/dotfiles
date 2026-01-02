@@ -12,7 +12,6 @@ zinit ice lucid wait'0'
 zinit light zsh-users/zsh-syntax-highlighting
 zinit light zsh-users/zsh-autosuggestions
 zinit light zsh-users/zsh-completions
-zinit light Sparragus/zsh-auto-nvm-use
 zinit light Aloxaf/fzf-tab
 
 # Snippets
