@@ -13,8 +13,6 @@ font-size = 16
 # Theme
 theme = light:Adwaita, dark:Adwaita Dark
 adjust-cell-height =  8%
-cursor-color = #000000
-cursor-style = block
 background-blur = true
 background-opacity = 0.9
 
