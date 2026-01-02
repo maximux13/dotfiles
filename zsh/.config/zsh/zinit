@@ -6,14 +6,23 @@ ZINIT_HOME="${XDG_DATA_HOME:-${HOME}/.local/share}/zinit/zinit.git"
 
 source "${ZINIT_HOME}/zinit.zsh"
 
-zinit ice lucid wait'0'
+# Homebrew completions - FIRST in fpath
+if [ -d /opt/homebrew/share/zsh/site-functions ]; then
+  fpath=(/opt/homebrew/share/zsh/site-functions $fpath)
+fi
+
+# Custom completions
+if [ -d ~/.zsh/completions ]; then
+  fpath=(~/.zsh/completions $fpath)
+fi
 
 # Plugins
 zinit light zsh-users/zsh-syntax-highlighting
 zinit light zsh-users/zsh-autosuggestions
-zinit light zsh-users/zsh-completions
-zinit light Aloxaf/fzf-tab
 
 # Snippets
 zinit snippet OMZP::git
 zinit snippet OMZP::command-not-found
+
+# Load completions - AFTER plugins
+autoload -Uz compinit && compinit

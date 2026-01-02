@@ -1,3 +1,2 @@
-alias pnpm="use_specific_pnpm"
 alias code="code-insiders"
 alias ls="lsd --tree --depth 1"

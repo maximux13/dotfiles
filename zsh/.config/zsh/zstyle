@@ -1,6 +1,47 @@
-zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}'
-zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
-zstyle ':completion:*' menu no
+# ========================================
+# Completion Matching
+# ========================================
+zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}' 'r:|=*' 'l:|=* r:|=*'
 
-zstyle ':fzf-tab:complete:cd:*' fzf-preview 'ls --color $realpath'
-zstyle ':fzf-tab:complete:__zoxide_z:*' fzf-preview 'ls --color $realpath'
+# ========================================
+# Completion Format & Display
+# ========================================
+zstyle ':completion:*' format '%F{cyan}-- %d --%f'
+zstyle ':completion:*' group-name ''
+zstyle ':completion:*' verbose yes
+zstyle ':completion:*:descriptions' format '%F{blue}%d%f'
+zstyle ':completion:*:messages' format '%F{red}%d%f'
+zstyle ':completion:*:warnings' format '%F{red}%d%f'
+
+# ========================================
+# Completion Menu & Navigation
+# ========================================
+zstyle ':completion:*' menu select
+zstyle ':completion:*' list-prompt '%SAt %p: Hit TAB for more, or the character to insert%s'
+zstyle ':completion:*' select-prompt '%SScrolling active: current selection at %p%s'
+
+# ========================================
+# Completion Caching
+# ========================================
+zstyle ':completion::complete:*' use-cache on
+zstyle ':completion::complete:*' cache-path ~/.zsh/cache
+
+# ========================================
+# File Sorting & Filtering
+# ========================================
+zstyle ':completion:*' file-sort modification
+zstyle ':completion:*:*:*:*:globbed-files' ignored-patterns '(|*/).git'
+zstyle ':completion:*:*:*:*:*' ignored-patterns '*.pyc' '*.pyo' '__pycache__'
+
+# ========================================
+# History Search
+# ========================================
+zstyle ':history-search-multi-word' highlight-color 'fg=yellow,bold'
+zstyle ':history-search-multi-word' page-size 4
+
+# ========================================
+# Command-specific Completion
+# ========================================
+zstyle ':completion:*:npm:*' file-sort name
+zstyle ':completion:*:rm:*' ignore-line yes
+zstyle ':completion:*:ssh:*' hosts

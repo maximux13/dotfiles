@@ -20,19 +20,3 @@ to_webm() {
 
   ffmpeg -i "$input_file" -filter:v "setpts=${speed}*PTS" -c:v libvpx-vp9 -b:v 0 -crf "$crf" -c:a libopus "${input_file%.mov}.webm"
 }
-
-
-use_specific_pnpm() {
-  if [ -f "package.json" ]; then
-    pnpm_version=$(jq -r '.packageManager' package.json | grep -o 'pnpm@[0-9.]*')
-
-    if [ -n "$pnpm_version" ]; then
-      echo "󱗼 Changed pnpm version to: $pnpm_version"
-      pnpx $pnpm_version "$@"
-      return
-    fi
-  fi
-
-  echo "󱗼 Using default pnpm version"
-  command pnpm "$@"
-}
