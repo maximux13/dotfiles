@@ -27,3 +27,11 @@ source $ZSH_FOLDER/zstyle
 
 source $ZSH_FOLDER/fzf
 source $ZSH_FOLDER/fastfetch
+
+# pnpm
+export PNPM_HOME="/Users/maestrico_/Library/pnpm"
+case ":$PATH:" in
+  *":$PNPM_HOME:"*) ;;
+  *) export PATH="$PNPM_HOME:$PATH" ;;
+esac
+# pnpm end

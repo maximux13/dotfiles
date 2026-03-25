@@ -15,10 +15,13 @@ theme = light:Adwaita, dark:Adwaita Dark
 adjust-cell-height =  8%
 background-blur = true
 background-opacity = 0.9
+window-padding-balance = true
 
 
 # Keybind
 copy-on-select = clipboard
+macos-option-as-alt = true
 
 link-url = true
 fullscreen = true
+keybind = shift+enter=text:\x1b\r
