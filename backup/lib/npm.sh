@@ -6,8 +6,11 @@
 # NPM packages.
 # =============================================================================
 
+set -euo pipefail
+
 # shellcheck source=common.sh
-source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${SCRIPT_DIR}/common.sh"
 
 # Backup globally installed NPM packages
 # Arguments:
@@ -16,7 +19,7 @@ backup_npm() {
     local backup_dir="$1"
 
     if [[ -z "$backup_dir" ]]; then
-        echo "Error: backup directory not specified" >&2
+        log_error "backup directory not specified"
         return 1
     fi
 
@@ -45,7 +48,7 @@ restore_npm() {
     local backup_dir="$1"
 
     if [[ -z "$backup_dir" ]]; then
-        echo "Error: backup directory not specified" >&2
+        log_error "backup directory not specified"
         return 1
     fi
 

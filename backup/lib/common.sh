@@ -73,53 +73,119 @@ EMOJI_MAC="🍎"
 EMOJI_WORKSPACE="🗂️ "
 
 # =============================================================================
-# Intro Headers - Clean modern design
+# Intro Header — flat, modern, terminal-width aware
 # =============================================================================
+# Usage: print_intro "backup" "v1.0.0"
+#        print_intro "restore" "v1.0.0"
+#        print_intro "test" "v1.0.0"
 print_intro() {
-    local mode="${1:-backup}"  # backup or restore
+    local mode="${1:-backup}"
     local version="${2:-v1.0.0}"
+    local term_width
+    term_width=$(tput cols 2>/dev/null || echo 60)
+    [[ -z "$term_width" || "$term_width" -lt 20 ]] && term_width=60
+    local inner=$(( term_width - 6 ))  # 3-space indent on each side
 
     clear
     echo ""
 
-    if [[ "$mode" == "backup" ]]; then
-        printf "   ${PURPLE}╭───────────────────────────────────────────╮${RESET}\n"
-        printf "   ${PURPLE}│${RESET}                                           ${PURPLE}│${RESET}\n"
-        printf "   ${PURPLE}│${RESET}   ${BOLD}💾 Mac Backup${RESET}                           ${PURPLE}│${RESET}\n"
-        printf "   ${PURPLE}│${RESET}   ${DIM}Secure backup for your Mac${RESET}              ${PURPLE}│${RESET}\n"
-        printf "   ${PURPLE}│${RESET}                                           ${PURPLE}│${RESET}\n"
-        printf "   ${PURPLE}╰───────────────────────────────────────────╯${RESET}\n"
-        echo ""
-        printf "   ${BG_PURPLE}${FG_BLACK} backup ${RESET} ${PURPLE}$version${RESET} ${DIM}Starting backup sequence...${RESET}\n"
-    else
-        printf "   ${GREEN}╭───────────────────────────────────────────╮${RESET}\n"
-        printf "   ${GREEN}│${RESET}                                           ${GREEN}│${RESET}\n"
-        printf "   ${GREEN}│${RESET}   ${BOLD}♻️  Mac Restore${RESET}                          ${GREEN}│${RESET}\n"
-        printf "   ${GREEN}│${RESET}   ${DIM}Restore from backup${RESET}                      ${GREEN}│${RESET}\n"
-        printf "   ${GREEN}│${RESET}                                           ${GREEN}│${RESET}\n"
-        printf "   ${GREEN}╰───────────────────────────────────────────╯${RESET}\n"
-        echo ""
-        printf "   ${BG_GREEN}${FG_BLACK} restore ${RESET} ${GREEN}$version${RESET} ${DIM}Starting restore sequence...${RESET}\n"
+    local title subtitle accent badge
+    case "$mode" in
+        backup)
+            title="💾  mac-backup"
+            subtitle="Secure backup for your Mac"
+            accent="$PURPLE"
+            badge="${BG_PURPLE}${FG_BLACK} backup ${RESET}"
+            ;;
+        restore)
+            title="♻️   mac-restore"
+            subtitle="Restore from backup"
+            accent="$GREEN"
+            badge="${BG_GREEN}${FG_BLACK} restore ${RESET}"
+            ;;
+        test)
+            title="🧪  test mode"
+            subtitle="Safe sandbox — files will NOT change"
+            accent="$ORANGE"
+            badge="${BG_ORANGE}${FG_BLACK} test ${RESET}"
+            ;;
+        *)
+            title="🖥️   mac-backup"
+            subtitle=""
+            accent="$CYAN"
+            badge="${BG_CYAN}${FG_BLACK} ${mode} ${RESET}"
+            ;;
+    esac
+
+    # Title line: title on left, version on right
+    # Strip emoji/ANSI for width calculation (approximate: emoji = 2 chars)
+    local title_len=${#title}
+    local ver_len=${#version}
+    local pad=$(( inner - title_len - ver_len ))
+    [[ $pad -lt 1 ]] && pad=1
+
+    printf "   ${BOLD}%s${RESET}" "$title"
+    printf "%*s" $pad ""
+    printf "${DIM}%s${RESET}\n" "$version"
+
+    # Separator line
+    printf "   ${accent}"
+    printf '─%.0s' $(seq 1 "$inner")
+    printf "${RESET}\n"
+
+    # Subtitle
+    if [[ -n "$subtitle" ]]; then
+        printf "   ${DIM}%s${RESET}\n" "$subtitle"
     fi
+    echo ""
+
+    # Mode badge + starting message
+    printf "   ${badge}${DIM}Starting %s sequence...${RESET}\n" "$mode"
     echo ""
 }
 
-# Print intro for test mode
-print_intro_test() {
-    local version="${1:-v1.0.0}"
+# =============================================================================
+# Step Tracker
+# =============================================================================
+_STEP_CURRENT=0
+_STEP_TOTAL=0
 
-    clear
-    echo ""
+# Initialize the step tracker before a sequence of steps
+# Usage: steps_init 6
+steps_init() {
+    _STEP_TOTAL="$1"
+    _STEP_CURRENT=0
+}
 
-    printf "   ${ORANGE}╭───────────────────────────────────────────╮${RESET}\n"
-    printf "   ${ORANGE}│${RESET}                                           ${ORANGE}│${RESET}\n"
-    printf "   ${ORANGE}│${RESET}   ${BOLD}🧪 Test Mode${RESET}                             ${ORANGE}│${RESET}\n"
-    printf "   ${ORANGE}│${RESET}   ${DIM}Safe testing - files will NOT change${RESET}    ${ORANGE}│${RESET}\n"
-    printf "   ${ORANGE}│${RESET}                                           ${ORANGE}│${RESET}\n"
-    printf "   ${ORANGE}╰───────────────────────────────────────────╯${RESET}\n"
-    echo ""
-    printf "   ${BG_ORANGE}${FG_BLACK} test ${RESET} ${ORANGE}$version${RESET} ${DIM}Running in sandbox mode...${RESET}\n"
-    echo ""
+# Print the next step header
+# Usage: steps_next "🔐 Secrets"
+steps_next() {
+    local label="$1"
+    _STEP_CURRENT=$(( _STEP_CURRENT + 1 ))
+
+    # Vertical connector from previous step
+    if [[ $_STEP_CURRENT -gt 1 ]]; then
+        printf "   ${DIM}┆${RESET}\n"
+    fi
+
+    printf "   ${BOLD}${CYAN}●${RESET} ${DIM}%d/%d${RESET}  %s\n" \
+        "$_STEP_CURRENT" "$_STEP_TOTAL" "$label"
+}
+
+# Mark the current step result
+# Usage: steps_done "Encrypted and saved"
+# Usage: steps_done "Skipped" warn
+# Status: ok (default) | warn | skip | fail
+steps_done() {
+    local message="$1"
+    local status="${2:-ok}"
+
+    case "$status" in
+        ok)   printf "   ${DIM}│${RESET}  ${GREEN}✓${RESET} ${DIM}%s${RESET}\n" "$message" ;;
+        warn) printf "   ${DIM}│${RESET}  ${YELLOW}⚠${RESET} ${DIM}%s${RESET}\n" "$message" ;;
+        skip) printf "   ${DIM}│${RESET}  ${GRAY}–${RESET} ${DIM}%s${RESET}\n" "$message" ;;
+        fail) printf "   ${DIM}│${RESET}  ${RED}✗${RESET} ${RED}%s${RESET}\n" "$message" ;;
+    esac
 }
 
 # =============================================================================
@@ -302,6 +368,147 @@ log_dim() {
 }
 
 # =============================================================================
+# Interactive Multi-Select Menu
+# =============================================================================
+# Usage:
+#   declare -a ITEMS=("Homebrew + Apps" "Secrets" "Dotfiles")
+#   declare -a ICONS=("🍺" "🔐" "📁")
+#   declare -a AVAIL=(1 1 0)       # 1=available, 0=not available/disabled
+#   declare -a SEL=()              # output: filled with 0/1 per item
+#   interactive_menu "Prompt" ITEMS ICONS AVAIL SEL
+#   # returns 0 on confirm, 1 on quit
+
+_menu_draw() {
+    local prompt="$1"
+    local items_ref="$2"
+    local icons_ref="$3"
+    local avail_ref="$4"
+    local sel_ref="$5"
+    local cursor="$6"
+
+    local -n __items="$items_ref"
+    local -n __icons="$icons_ref"
+    local -n __avail="$avail_ref"
+    local -n __sel="$sel_ref"
+
+    printf "   ${BOLD}?${RESET} %s\n" "$prompt"
+    echo ""
+
+    for i in "${!__items[@]}"; do
+        local item="${__items[$i]}"
+        local icon="${__icons[$i]}"
+        local avail="${__avail[$i]:-0}"
+        local selected="${__sel[$i]:-0}"
+
+        local pointer
+        if [[ "$i" -eq "$cursor" ]]; then
+            pointer="${CYAN}▶${RESET}"
+        else
+            pointer="${DIM}┃${RESET}"
+        fi
+
+        if [[ "$avail" -eq 0 ]]; then
+            printf "   %b  ${DIM}○  %s  %s${RESET}  ${DIM}· not in backup${RESET}\n" \
+                "$pointer" "$icon" "$item"
+        elif [[ "$selected" -eq 1 ]]; then
+            if [[ "$i" -eq "$cursor" ]]; then
+                printf "   %b  ${CYAN}◉${RESET}  %s  ${BOLD}%s${RESET}\n" \
+                    "$pointer" "$icon" "$item"
+            else
+                printf "   %b  ${GREEN}◉${RESET}  %s  %s\n" \
+                    "$pointer" "$icon" "$item"
+            fi
+        else
+            printf "   %b  ${DIM}○${RESET}  %s  ${DIM}%s${RESET}\n" \
+                "$pointer" "$icon" "$item"
+        fi
+    done
+
+    echo ""
+    printf "   ${DIM}↑↓ navigate   space toggle   a all   n none   enter confirm   q quit${RESET}\n"
+}
+
+interactive_menu() {
+    local prompt="$1"
+    local items_ref="$2"
+    local icons_ref="$3"
+    local avail_ref="$4"
+    local sel_ref="$5"
+
+    local -n _items="$items_ref"
+    local -n _avail="$avail_ref"
+    local -n _sel="$sel_ref"
+
+    local count="${#_items[@]}"
+    local cursor=0
+
+    # Initialize: select all available by default
+    for i in "${!_items[@]}"; do
+        _sel[$i]="${_avail[$i]:-0}"
+    done
+
+    # Hide cursor, set cleanup trap
+    tput civis 2>/dev/null || true
+    trap 'tput cnorm 2>/dev/null || true' EXIT INT TERM
+
+    # line_count = items + prompt line + blank after prompt + blank after items + hint line
+    local line_count=$(( count + 4 ))
+
+    # Initial draw
+    _menu_draw "$prompt" "$items_ref" "$icons_ref" "$avail_ref" "$sel_ref" "$cursor"
+
+    local result=0
+
+    while true; do
+        IFS= read -r -s -n1 key
+        if [[ "$key" == $'\x1b' ]]; then
+            IFS= read -r -s -n2 -t 0.05 rest
+            key="${key}${rest}"
+        fi
+
+        case "$key" in
+            $'\x1b[A'|k)  # Up
+                (( cursor > 0 )) && (( cursor-- )) || true ;;
+            $'\x1b[B'|j)  # Down
+                (( cursor < count - 1 )) && (( cursor++ )) || true ;;
+            ' ')  # Toggle
+                if [[ "${_avail[$cursor]:-0}" -eq 1 ]]; then
+                    if [[ "${_sel[$cursor]:-0}" -eq 1 ]]; then
+                        _sel[$cursor]=0
+                    else
+                        _sel[$cursor]=1
+                    fi
+                fi
+                ;;
+            a|A)  # All available
+                for i in "${!_items[@]}"; do
+                    _sel[$i]="${_avail[$i]:-0}"
+                done
+                ;;
+            n|N)  # None
+                for i in "${!_items[@]}"; do
+                    _sel[$i]=0
+                done
+                ;;
+            q|Q)  # Quit
+                result=1; break ;;
+            '')   # Enter
+                result=0; break ;;
+        esac
+
+        # Redraw: move cursor up and redraw
+        printf "\033[%dA" "$line_count"
+        _menu_draw "$prompt" "$items_ref" "$icons_ref" "$avail_ref" "$sel_ref" "$cursor"
+    done
+
+    tput cnorm 2>/dev/null || true
+    # Restore the spinner's INT/TERM trap (set globally when common.sh is sourced)
+    trap '_cleanup_spinner; exit 130' INT TERM
+    trap - EXIT
+    return $result
+}
+
+# =============================================================================
 # Banners and UI
 # =============================================================================
 
@@ -340,15 +547,40 @@ print_section() {
     printf "${DIM}%s${RESET}\n" "─────────────────────────────────"
 }
 
-# Print a completion box
-# Usage: print_complete "Message"
+# Print a completion message (flat, modern — no box drawing)
+# Usage: print_complete "Backup Complete!" backup
+# mode: backup | restore | test (controls accent color)
 print_complete() {
     local message="$1"
+    local mode="${2:-backup}"
+
+    local accent
+    case "$mode" in
+        backup)  accent="$PURPLE" ;;
+        restore) accent="$GREEN" ;;
+        test)    accent="$ORANGE" ;;
+        *)       accent="$CYAN" ;;
+    esac
+
     echo ""
-    printf "${GREEN}╭─────────────────────────────────────────────╮${RESET}\n"
-    printf "${GREEN}│${RESET}  ${EMOJI_SPARKLES} ${BOLD}%s${RESET}%*s${GREEN}│${RESET}\n" "$message" $((40 - ${#message})) ""
-    printf "${GREEN}╰─────────────────────────────────────────────╯${RESET}\n"
+    printf "   ${accent}${BOLD}✓ %s${RESET}\n" "$message"
     echo ""
+}
+
+# Print a labeled file/item list as a mini tree
+# Usage: print_file_tree "🔐 secrets.tar.enc (encrypted)" "📁 dotfiles.tar.gz" ...
+print_file_tree() {
+    local items=("$@")
+    local last=$(( ${#items[@]} - 1 ))
+
+    printf "   ${DIM}Contents:${RESET}\n"
+    for i in "${!items[@]}"; do
+        if [[ $i -eq $last ]]; then
+            printf "   ${DIM}╰─${RESET} %s\n" "${items[$i]}"
+        else
+            printf "   ${DIM}├─${RESET} %s\n" "${items[$i]}"
+        fi
+    done
 }
 
 # Progress bar (for future use)

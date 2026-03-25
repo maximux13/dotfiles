@@ -13,6 +13,7 @@ LIB_DIR="$BACKUP_SCRIPT_DIR/lib"
 
 # Source libraries
 source "$LIB_DIR/common.sh"
+source "$LIB_DIR/header.sh"
 source "$LIB_DIR/crypto.sh"
 source "$LIB_DIR/secrets.sh"
 source "$LIB_DIR/dotfiles.sh"
@@ -26,27 +27,7 @@ INCLUDE_WORKSPACE=false
 
 # Usage
 usage() {
-    echo ""
-    printf "${BOLD}${CYAN}Mac Backup${RESET} - ${DIM}Secure backup for your Mac${RESET}\n"
-    echo ""
-    printf "${BOLD}Usage:${RESET}\n"
-    printf "  %s ${CYAN}<destination>${RESET} [options]\n" "$0"
-    echo ""
-    printf "${BOLD}Options:${RESET}\n"
-    printf "  ${CYAN}--workspace${RESET}  Include ~/workspace projects ${DIM}(excludes node_modules, etc.)${RESET}\n"
-    echo ""
-    printf "${BOLD}Examples:${RESET}\n"
-    printf "  %s /Volumes/USB/\n" "$0"
-    printf "  %s ~/Desktop/ --workspace\n" "$0"
-    echo ""
-    printf "${BOLD}What gets backed up:${RESET}\n"
-    printf "  ${EMOJI_LOCK}  Secrets (SSH, AWS, GPG) ${DIM}[encrypted]${RESET}\n"
-    printf "  ${EMOJI_FOLDER}  Dotfiles (~/.dotfiles)\n"
-    printf "  ${EMOJI_BREW}  Homebrew packages\n"
-    printf "  ${EMOJI_CODE}  VS Code Insiders\n"
-    printf "  ${EMOJI_NPM}  NPM global packages\n"
-    printf "  ${EMOJI_WORKSPACE} Workspace ${DIM}[optional: --workspace]${RESET}\n"
-    echo ""
+    print_header "backup"
     exit 1
 }
 
@@ -87,109 +68,90 @@ main() {
     mkdir -p "$backup_dir"
 
     # Show fancy intro
-    print_intro "backup" "v1.0.0"
+    print_header "backup"
 
     # Show destination with tag
     tag_dest "$backup_dir"
     echo ""
 
-    # ─────────────────────────────────────────
-    # Secrets
-    # ─────────────────────────────────────────
-    print_tag "secrets" "orange" "${EMOJI_LOCK} Backing up secrets..."
+    # Count steps (manifest is always last)
+    local total_steps=6
+    $INCLUDE_WORKSPACE && total_steps=7
+    steps_init $total_steps
+
+    # ─── Secrets ──────────────────────────────────────────
+    steps_next "${EMOJI_LOCK} Secrets"
     if backup_secrets "$backup_dir"; then
-        tag_done "Secrets encrypted and saved"
+        steps_done "Encrypted and saved"
     else
-        tag_warn "Secrets backup skipped"
+        steps_done "Skipped" warn
     fi
 
-    # ─────────────────────────────────────────
-    # Dotfiles
-    # ─────────────────────────────────────────
-    echo ""
-    print_tag "dotfiles" "cyan" "${EMOJI_FOLDER} Backing up dotfiles..."
+    # ─── Dotfiles ─────────────────────────────────────────
+    steps_next "${EMOJI_FOLDER} Dotfiles"
     if backup_dotfiles "$backup_dir"; then
-        tag_done "Dotfiles archived"
+        steps_done "Archived"
     else
-        tag_warn "Dotfiles backup failed"
+        steps_done "Failed" fail
     fi
 
-    # ─────────────────────────────────────────
-    # Homebrew
-    # ─────────────────────────────────────────
-    echo ""
-    print_tag "brew" "yellow" "${EMOJI_BREW} Backing up Homebrew..."
+    # ─── Homebrew ─────────────────────────────────────────
+    steps_next "${EMOJI_BREW} Homebrew"
     if backup_apps "$backup_dir"; then
-        tag_done "Brewfile generated"
+        steps_done "Brewfile generated"
     else
-        tag_warn "Homebrew backup failed"
+        steps_done "Failed" fail
     fi
 
-    # ─────────────────────────────────────────
-    # VS Code
-    # ─────────────────────────────────────────
-    echo ""
-    print_tag "vscode" "blue" "${EMOJI_CODE} Backing up VS Code Insiders..."
+    # ─── VS Code ──────────────────────────────────────────
+    steps_next "${EMOJI_CODE} VS Code"
     if backup_vscode "$backup_dir"; then
-        tag_done "Extensions and settings saved"
+        steps_done "Extensions and settings saved"
     else
-        tag_skip "VS Code backup skipped"
+        steps_done "Skipped" skip
     fi
 
-    # ─────────────────────────────────────────
-    # NPM
-    # ─────────────────────────────────────────
-    echo ""
-    print_tag "npm" "red" "${EMOJI_NPM} Backing up NPM packages..."
+    # ─── NPM ──────────────────────────────────────────────
+    steps_next "${EMOJI_NPM} NPM"
     if backup_npm "$backup_dir"; then
-        tag_done "Global packages list saved"
+        steps_done "Global packages list saved"
     else
-        tag_skip "NPM backup skipped"
+        steps_done "Skipped" skip
     fi
 
-    # ─────────────────────────────────────────
-    # Workspace (optional)
-    # ─────────────────────────────────────────
+    # ─── Workspace (optional) ─────────────────────────────
     if $INCLUDE_WORKSPACE; then
-        echo ""
-        print_tag "workspace" "pink" "${EMOJI_WORKSPACE}Backing up workspace..."
+        steps_next "${EMOJI_WORKSPACE} Workspace"
         if backup_workspace "$backup_dir"; then
-            tag_done "Workspace archived (excluding node_modules, etc.)"
+            steps_done "Archived (excluding node_modules)"
         else
-            tag_warn "Workspace backup failed"
+            steps_done "Failed" fail
         fi
     fi
 
-    # ─────────────────────────────────────────
-    # Manifest
-    # ─────────────────────────────────────────
-    echo ""
-    print_tag "manifest" "purple" "${EMOJI_GEAR} Creating manifest..."
+    # ─── Manifest ─────────────────────────────────────────
+    steps_next "${EMOJI_GEAR} Manifest"
     create_manifest "$backup_dir"
-    tag_done "Backup manifest created"
+    steps_done "manifest.json created"
 
-    # ─────────────────────────────────────────
-    # Summary
-    # ─────────────────────────────────────────
-    echo ""
-    printf "   ${GREEN}╭───────────────────────────────────────────╮${RESET}\n"
-    printf "   ${GREEN}│${RESET}   ${BOLD}✓ Backup Complete!${RESET}                       ${GREEN}│${RESET}\n"
-    printf "   ${GREEN}╰───────────────────────────────────────────╯${RESET}\n"
-    echo ""
+    # ─── Summary ──────────────────────────────────────────
+    print_complete "Backup Complete!" backup
 
-    # Show contents
-    printf "   ${DIM}Contents:${RESET}\n"
-    [[ -f "$backup_dir/secrets.tar.enc" ]] && printf "   ${DIM}├─${RESET} 🔐 secrets.tar.enc ${DIM}(encrypted)${RESET}\n"
-    [[ -f "$backup_dir/dotfiles.tar.gz" ]] && printf "   ${DIM}├─${RESET} 📁 dotfiles.tar.gz\n"
-    [[ -f "$backup_dir/Brewfile" ]] && printf "   ${DIM}├─${RESET} 🍺 Brewfile\n"
-    [[ -d "$backup_dir/vscode-insiders" ]] && printf "   ${DIM}├─${RESET} 💻 vscode-insiders/\n"
-    [[ -f "$backup_dir/npm-global.txt" ]] && printf "   ${DIM}├─${RESET} 📦 npm-global.txt\n"
-    [[ -f "$backup_dir/workspace.tar.gz" ]] && printf "   ${DIM}├─${RESET} 🗂️  workspace.tar.gz\n"
-    [[ -f "$backup_dir/manifest.json" ]] && printf "   ${DIM}╰─${RESET} ⚙️  manifest.json\n"
+    local tree_items=()
+    [[ -f "$backup_dir/secrets.tar.enc" ]]  && tree_items+=("${EMOJI_LOCK} secrets.tar.enc ${DIM}(encrypted)${RESET}")
+    [[ -f "$backup_dir/dotfiles.tar.gz" ]]  && tree_items+=("${EMOJI_FOLDER} dotfiles.tar.gz")
+    [[ -f "$backup_dir/Brewfile" ]]         && tree_items+=("${EMOJI_BREW} Brewfile")
+    [[ -d "$backup_dir/vscode" ]]           && tree_items+=("${EMOJI_CODE} vscode/")
+    [[ -d "$backup_dir/vscode-insiders" ]]  && tree_items+=("${EMOJI_CODE} vscode-insiders/")
+    [[ -f "$backup_dir/npm-global.txt" ]]   && tree_items+=("${EMOJI_NPM} npm-global.txt")
+    [[ -f "$backup_dir/workspace.tar.gz" ]] && tree_items+=("${EMOJI_WORKSPACE} workspace.tar.gz")
+    [[ -f "$backup_dir/manifest.json" ]]    && tree_items+=("${EMOJI_GEAR} manifest.json")
+
+    print_file_tree "${tree_items[@]}"
 
     echo ""
     printf "   ${BG_PURPLE}${FG_BLACK} next ${RESET} Copy this folder to your external drive\n"
-    printf "   ${DIM}To restore:${RESET} ${CYAN}./restore.sh %s${RESET}\n" "$backup_dir"
+    printf "   ${DIM}On a new Mac, run:${RESET} ${CYAN}./install.sh${RESET} ${DIM}from inside the backup folder${RESET}\n"
     echo ""
 }
 
@@ -207,7 +169,7 @@ create_manifest() {
         "secrets": $([ -f "$backup_dir/secrets.tar.enc" ] && echo "true" || echo "false"),
         "dotfiles": $([ -f "$backup_dir/dotfiles.tar.gz" ] && echo "true" || echo "false"),
         "brewfile": $([ -f "$backup_dir/Brewfile" ] && echo "true" || echo "false"),
-        "vscode": $([ -d "$backup_dir/vscode-insiders" ] && echo "true" || echo "false"),
+        "vscode": $(([[ -d "$backup_dir/vscode" ]] || [[ -d "$backup_dir/vscode-insiders" ]]) && echo "true" || echo "false"),
         "npm": $([ -f "$backup_dir/npm-global.txt" ] && echo "true" || echo "false"),
         "workspace": $([ -f "$backup_dir/workspace.tar.gz" ] && echo "true" || echo "false")
     }

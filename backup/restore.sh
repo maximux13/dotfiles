@@ -13,6 +13,7 @@ LIB_DIR="$RESTORE_SCRIPT_DIR/lib"
 
 # Source libraries
 source "$LIB_DIR/common.sh"
+source "$LIB_DIR/header.sh"
 source "$LIB_DIR/crypto.sh"
 source "$LIB_DIR/secrets.sh"
 source "$LIB_DIR/dotfiles.sh"
@@ -27,135 +28,31 @@ TEST_MODE=false
 
 # Usage
 usage() {
-    echo ""
-    printf "${BOLD}${CYAN}Mac Restore${RESET} - ${DIM}Restore your Mac from backup${RESET}\n"
-    echo ""
-    printf "${BOLD}Usage:${RESET}\n"
-    printf "  %s ${CYAN}<backup_dir>${RESET} [options]\n" "$0"
-    echo ""
-    printf "${BOLD}Options:${RESET}\n"
-    printf "  ${CYAN}--target <dir>${RESET}  Restore to alternative directory ${DIM}(safe testing)${RESET}\n"
-    echo ""
-    printf "${BOLD}Examples:${RESET}\n"
-    printf "  %s /Volumes/USB/mac-backup-2024-12-27/\n" "$0"
-    printf "  %s /Volumes/USB/mac-backup-2024-12-27/ --target /tmp/test\n" "$0"
-    echo ""
+    print_header "restore"
     exit 1
 }
 
-# Show menu and get selection
-show_menu() {
+# Build menu arrays based on what's available in the backup
+_build_restore_menu() {
     local backup_dir="$1"
 
-    # Check what's available
-    local has_secrets=false
-    local has_dotfiles=false
-    local has_brewfile=false
-    local has_vscode=false
-    local has_npm=false
-    local has_workspace=false
+    MENU_ITEMS=("Homebrew + Apps" "Secrets (SSH, AWS, GPG)" "Dotfiles" "VS Code" "NPM Packages" "Workspace")
+    MENU_ICONS=("${EMOJI_BREW}" "${EMOJI_LOCK}" "${EMOJI_FOLDER}" "${EMOJI_CODE}" "${EMOJI_NPM}" "${EMOJI_WORKSPACE}")
+    MENU_AVAILABLE=(0 0 0 0 0 0)
+    MENU_SELECTED=()
 
-    [[ -f "$backup_dir/secrets.tar.enc" ]] && has_secrets=true
-    [[ -f "$backup_dir/dotfiles.tar.gz" ]] && has_dotfiles=true
-    [[ -f "$backup_dir/Brewfile" ]] && has_brewfile=true
-    [[ -d "$backup_dir/vscode-insiders" ]] && has_vscode=true
-    [[ -f "$backup_dir/npm-global.txt" ]] && has_npm=true
-    [[ -f "$backup_dir/workspace.tar.gz" ]] && has_workspace=true
+    [[ -f "$backup_dir/Brewfile" ]]                                               && MENU_AVAILABLE[0]=1
+    [[ -f "$backup_dir/secrets.tar.enc" ]]                                        && MENU_AVAILABLE[1]=1
+    [[ -f "$backup_dir/dotfiles.tar.gz" ]]                                        && MENU_AVAILABLE[2]=1
+    { [[ -d "$backup_dir/vscode" ]] || [[ -d "$backup_dir/vscode-insiders" ]]; } && MENU_AVAILABLE[3]=1
+    [[ -f "$backup_dir/npm-global.txt" ]]                                         && MENU_AVAILABLE[4]=1
+    [[ -f "$backup_dir/workspace.tar.gz" ]]                                       && MENU_AVAILABLE[5]=1
 
-    printf "   ${BG_CYAN}${FG_BLACK} select ${RESET} ${BOLD}What would you like to restore?${RESET}\n"
-    echo ""
-
-    # Homebrew
+    # Disable brew/vscode/npm in test mode
     if $TEST_MODE; then
-        printf "   ${DIM}○${RESET} ${DIM}[1]${RESET} ${EMOJI_BREW}  ${DIM}Homebrew + Apps (skip in test)${RESET}\n"
-    elif $has_brewfile; then
-        printf "   ${GREEN}●${RESET} ${BOLD}[1]${RESET} ${EMOJI_BREW}  Homebrew + Apps\n"
-    else
-        printf "   ${DIM}○${RESET} ${DIM}[1]${RESET} ${EMOJI_BREW}  ${DIM}Homebrew + Apps (not in backup)${RESET}\n"
-    fi
-
-    # Secrets
-    if $has_secrets; then
-        printf "   ${GREEN}●${RESET} ${BOLD}[2]${RESET} ${EMOJI_LOCK}  Secrets (SSH, AWS, GPG)\n"
-    else
-        printf "   ${DIM}○${RESET} ${DIM}[2]${RESET} ${EMOJI_LOCK}  ${DIM}Secrets (not in backup)${RESET}\n"
-    fi
-
-    # Dotfiles
-    if $has_dotfiles; then
-        printf "   ${GREEN}●${RESET} ${BOLD}[3]${RESET} ${EMOJI_FOLDER}  Dotfiles (stow packages)\n"
-    else
-        printf "   ${DIM}○${RESET} ${DIM}[3]${RESET} ${EMOJI_FOLDER}  ${DIM}Dotfiles (not in backup)${RESET}\n"
-    fi
-
-    # VS Code
-    if $TEST_MODE; then
-        printf "   ${DIM}○${RESET} ${DIM}[4]${RESET} ${EMOJI_CODE}  ${DIM}VS Code Insiders (skip in test)${RESET}\n"
-    elif $has_vscode; then
-        printf "   ${GREEN}●${RESET} ${BOLD}[4]${RESET} ${EMOJI_CODE}  VS Code Insiders\n"
-    else
-        printf "   ${DIM}○${RESET} ${DIM}[4]${RESET} ${EMOJI_CODE}  ${DIM}VS Code Insiders (not in backup)${RESET}\n"
-    fi
-
-    # NPM
-    if $TEST_MODE; then
-        printf "   ${DIM}○${RESET} ${DIM}[5]${RESET} ${EMOJI_NPM}  ${DIM}NPM Global Packages (skip in test)${RESET}\n"
-    elif $has_npm; then
-        printf "   ${GREEN}●${RESET} ${BOLD}[5]${RESET} ${EMOJI_NPM}  NPM Global Packages\n"
-    else
-        printf "   ${DIM}○${RESET} ${DIM}[5]${RESET} ${EMOJI_NPM}  ${DIM}NPM Packages (not in backup)${RESET}\n"
-    fi
-
-    # Workspace
-    if $has_workspace; then
-        printf "   ${GREEN}●${RESET} ${BOLD}[6]${RESET} ${EMOJI_WORKSPACE} Workspace (projects)\n"
-    else
-        printf "   ${DIM}○${RESET} ${DIM}[6]${RESET} ${EMOJI_WORKSPACE} ${DIM}Workspace (not in backup)${RESET}\n"
-    fi
-
-    echo ""
-    printf "   ${DIM}───────────────────────────────────────────────${RESET}\n"
-    echo ""
-    if $TEST_MODE; then
-        printf "   ${PURPLE}[a]${RESET} All testable ${DIM}(2,3,6)${RESET}   ${RED}[q]${RESET} Quit\n"
-    else
-        printf "   ${PURPLE}[a]${RESET} All available          ${RED}[q]${RESET} Quit\n"
-    fi
-    echo ""
-    printf "   ${YELLOW}▸${RESET} Enter selection ${DIM}(comma-separated):${RESET} "
-}
-
-# Bootstrap: ensure minimum requirements
-bootstrap() {
-    print_section "System Check" "$EMOJI_GEAR"
-
-    # Check for Xcode Command Line Tools
-    if ! xcode-select -p &>/dev/null; then
-        log_warn "Xcode Command Line Tools not installed"
-        log_step "Installing Xcode Command Line Tools..."
-        xcode-select --install
-        printf "${YELLOW}?${RESET} Press Enter after installation completes..."
-        read -r
-    fi
-    log_success "Xcode Command Line Tools"
-
-    # Check for Homebrew
-    if ! command -v brew &>/dev/null; then
-        log_warn "Homebrew not installed"
-        if confirm "Install Homebrew now?"; then
-            log_step "Installing Homebrew..."
-            /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-
-            if [[ -f "/opt/homebrew/bin/brew" ]]; then
-                eval "$(/opt/homebrew/bin/brew shellenv)"
-            elif [[ -f "/usr/local/bin/brew" ]]; then
-                eval "$(/usr/local/bin/brew shellenv)"
-            fi
-        fi
-    fi
-
-    if command -v brew &>/dev/null; then
-        log_success "Homebrew"
+        MENU_AVAILABLE[0]=0
+        MENU_AVAILABLE[3]=0
+        MENU_AVAILABLE[4]=0
     fi
 }
 
@@ -195,11 +92,11 @@ main() {
 
     # Show fancy intro based on mode
     if $TEST_MODE; then
-        print_intro_test "v1.0.0"
+        print_header "restore"
         tag_dest "$RESTORE_TARGET"
         mkdir -p "$RESTORE_TARGET"
     else
-        print_intro "restore" "v1.0.0"
+        print_header "restore"
     fi
 
     # Show backup info with tags
@@ -212,134 +109,85 @@ main() {
         echo ""
     fi
 
-    # Bootstrap system (skip in test mode)
-    if ! $TEST_MODE; then
-        bootstrap
-    fi
+    # Build and show interactive menu
+    declare -a MENU_ITEMS MENU_ICONS MENU_AVAILABLE MENU_SELECTED
+    _build_restore_menu "$backup_dir"
 
-    # Show menu
-    show_menu "$backup_dir"
-    read -r selection
-
-    # Handle quit
-    if [[ "$selection" == "q" ]]; then
+    echo ""
+    if ! interactive_menu "What would you like to restore?" \
+            MENU_ITEMS MENU_ICONS MENU_AVAILABLE MENU_SELECTED; then
         log_info "Restore cancelled"
         exit 0
     fi
-
-    # Handle "all"
-    if [[ "$selection" == "a" ]]; then
-        if $TEST_MODE; then
-            selection="2,3,6"
-        else
-            selection="1,2,3,4,5,6"
-        fi
-    fi
-
-    # Parse selection
-    IFS=',' read -ra choices <<< "$selection"
     echo ""
 
-    for choice in "${choices[@]}"; do
-        choice=$(echo "$choice" | tr -d ' ')
+    # Count selected items for step tracker
+    local selected_count=0
+    for s in "${MENU_SELECTED[@]}"; do (( selected_count += s )) || true; done
+    steps_init "$selected_count"
 
-        case "$choice" in
-            1)
-                if $TEST_MODE; then
-                    tag_skip "Homebrew (test mode)"
-                elif [[ -f "$backup_dir/Brewfile" ]]; then
-                    print_tag "brew" "yellow" "${EMOJI_BREW} Restoring Homebrew..."
-                    if restore_apps "$backup_dir"; then
-                        tag_done "Homebrew packages restored"
-                    else
-                        tag_error "Homebrew restore failed"
-                    fi
+    for i in "${!MENU_ITEMS[@]}"; do
+        [[ "${MENU_SELECTED[$i]:-0}" -eq 0 ]] && continue
+
+        case "$i" in
+            0)  # Homebrew
+                steps_next "${EMOJI_BREW} Homebrew + Apps"
+                if restore_apps "$backup_dir"; then
+                    steps_done "Packages restored"
                 else
-                    tag_warn "Brewfile not found in backup"
+                    steps_done "Some packages failed" warn
                 fi
                 ;;
-            2)
-                if [[ -f "$backup_dir/secrets.tar.enc" ]]; then
-                    print_tag "secrets" "orange" "${EMOJI_LOCK} Restoring secrets..."
-                    if restore_secrets "$backup_dir" "$RESTORE_TARGET"; then
-                        tag_done "Secrets restored"
-                    else
-                        tag_error "Secrets restore failed"
-                    fi
+            1)  # Secrets
+                steps_next "${EMOJI_LOCK} Secrets"
+                if restore_secrets "$backup_dir" "$RESTORE_TARGET"; then
+                    steps_done "Secrets restored"
                 else
-                    tag_warn "Secrets not found in backup"
+                    steps_done "Failed" fail
                 fi
                 ;;
-            3)
-                if [[ -f "$backup_dir/dotfiles.tar.gz" ]]; then
-                    print_tag "dotfiles" "cyan" "${EMOJI_FOLDER} Restoring dotfiles..."
-                    if restore_dotfiles "$backup_dir" "$RESTORE_TARGET"; then
-                        tag_done "Dotfiles restored"
-                    else
-                        tag_error "Dotfiles restore failed"
-                    fi
+            2)  # Dotfiles
+                steps_next "${EMOJI_FOLDER} Dotfiles"
+                if restore_dotfiles "$backup_dir" "$RESTORE_TARGET"; then
+                    steps_done "Dotfiles restored"
                 else
-                    tag_warn "Dotfiles not found in backup"
+                    steps_done "Failed" fail
                 fi
                 ;;
-            4)
-                if $TEST_MODE; then
-                    tag_skip "VS Code (test mode)"
-                elif [[ -d "$backup_dir/vscode-insiders" ]]; then
-                    print_tag "vscode" "blue" "${EMOJI_CODE} Restoring VS Code Insiders..."
-                    if restore_vscode "$backup_dir"; then
-                        tag_done "VS Code Insiders restored"
-                    else
-                        tag_error "VS Code restore failed"
-                    fi
+            3)  # VS Code
+                steps_next "${EMOJI_CODE} VS Code"
+                if restore_vscode "$backup_dir"; then
+                    steps_done "Extensions and settings restored"
                 else
-                    tag_warn "VS Code backup not found"
+                    steps_done "Failed" fail
                 fi
                 ;;
-            5)
-                if $TEST_MODE; then
-                    tag_skip "NPM (test mode)"
-                elif [[ -f "$backup_dir/npm-global.txt" ]]; then
-                    print_tag "npm" "red" "${EMOJI_NPM} Restoring NPM packages..."
-                    if restore_npm "$backup_dir"; then
-                        tag_done "NPM packages restored"
-                    else
-                        tag_error "NPM restore failed"
-                    fi
+            4)  # NPM
+                steps_next "${EMOJI_NPM} NPM Packages"
+                if restore_npm "$backup_dir"; then
+                    steps_done "Global packages installed"
                 else
-                    tag_warn "NPM packages not found"
+                    steps_done "Failed" fail
                 fi
                 ;;
-            6)
-                if [[ -f "$backup_dir/workspace.tar.gz" ]]; then
-                    print_tag "workspace" "pink" "${EMOJI_WORKSPACE}Restoring workspace..."
-                    if restore_workspace "$backup_dir" "$RESTORE_TARGET"; then
-                        tag_done "Workspace restored"
-                    else
-                        tag_error "Workspace restore failed"
-                    fi
+            5)  # Workspace
+                steps_next "${EMOJI_WORKSPACE} Workspace"
+                if restore_workspace "$backup_dir" "$RESTORE_TARGET"; then
+                    steps_done "Projects restored"
                 else
-                    tag_warn "Workspace not found in backup"
+                    steps_done "Failed" fail
                 fi
-                ;;
-            *)
-                tag_warn "Invalid option: $choice"
                 ;;
         esac
-        echo ""
     done
 
-    # Success message
-    echo ""
-    printf "   ${GREEN}╭───────────────────────────────────────────╮${RESET}\n"
-    printf "   ${GREEN}│${RESET}   ${BOLD}✓ Restore Complete!${RESET}                      ${GREEN}│${RESET}\n"
-    printf "   ${GREEN}╰───────────────────────────────────────────╯${RESET}\n"
-    echo ""
-
+    # ─── Summary ──────────────────────────────────────────
     if $TEST_MODE; then
+        print_complete "Restore Complete (test mode)" test
         printf "   ${BG_ORANGE}${FG_BLACK} test ${RESET} Restored to: ${CYAN}%s${RESET}\n" "$RESTORE_TARGET"
         printf "   ${BG_PURPLE}${FG_BLACK} next ${RESET} Verify contents, then run without --target\n"
     else
+        print_complete "Restore Complete!" restore
         printf "   ${BG_PURPLE}${FG_BLACK} next ${RESET} You may need to restart your terminal\n"
     fi
     echo ""

@@ -12,9 +12,6 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/common.sh"
 
-# Homebrew installation URL
-HOMEBREW_INSTALL_URL="https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh"
-
 # backup_apps - Create a Brewfile backup of all installed Homebrew packages
 #
 # Arguments:
@@ -90,12 +87,6 @@ restore_apps() {
         return 1
     fi
 
-    # Check if Homebrew is installed, if not install it
-    if ! command -v brew &>/dev/null; then
-        log_warn "Homebrew is not installed"
-        _install_homebrew
-    fi
-
     # Verify Homebrew is now available
     if ! command -v brew &>/dev/null; then
         log_error "Homebrew installation failed or not in PATH"
@@ -127,35 +118,5 @@ restore_apps() {
         log_warn "Some packages are not installed. Check the output above."
     else
         log_success "All packages from Brewfile are installed"
-    fi
-}
-
-# _install_homebrew - Install Homebrew
-#
-# Installs Homebrew using the official installation script
-_install_homebrew() {
-    log_info "Installing Homebrew..."
-
-    read -rp "Install Homebrew? [y/N]: " confirm
-    if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
-        log_info "Skipping Homebrew installation"
-        return 1
-    fi
-
-    # Download and run the Homebrew installer
-    if /bin/bash -c "$(curl -fsSL "$HOMEBREW_INSTALL_URL")"; then
-        log_success "Homebrew installed successfully"
-
-        # Add Homebrew to PATH for Apple Silicon Macs
-        if [[ -f "/opt/homebrew/bin/brew" ]]; then
-            eval "$(/opt/homebrew/bin/brew shellenv)"
-            log_info "Added Homebrew to PATH (Apple Silicon)"
-        elif [[ -f "/usr/local/bin/brew" ]]; then
-            eval "$(/usr/local/bin/brew shellenv)"
-            log_info "Added Homebrew to PATH (Intel)"
-        fi
-    else
-        log_error "Failed to install Homebrew"
-        return 1
     fi
 }
